@@ -1,7 +1,9 @@
-﻿using System;
+﻿using Microsoft.IdentityModel.Tokens;
+using Microsoft.Owin.Security.DataHandler.Encoder;
+using System;
+using System.Configuration;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using Microsoft.IdentityModel.Tokens;
 
 namespace WebApi.Jwt
 {
@@ -12,11 +14,17 @@ namespace WebApi.Jwt
         ///     var hmac = new HMACSHA256();
         ///     var key = Convert.ToBase64String(hmac.Key);
         /// </summary>
-        private const string Secret = "db3OIsj+BXE9NZDy0t8W3TcNekrF+2d/1sFnWG4HnV8TZY30iTOdtVWJG8abWvB1GlOgJuQZdcF2Luqm/hccMw==";
+        private static string Secret
+        {
+            get
+            {
+                return ConfigurationManager.AppSettings["JwtSignKey"];
+            }
+        }
 
         public static string GenerateToken(string username, int expireMinutes = 20)
         {
-            var symmetricKey = Convert.FromBase64String(Secret);
+            var symmetricKey = TextEncodings.Base64Url.Decode(Secret);
             var tokenHandler = new JwtSecurityTokenHandler();
 
             var now = DateTime.UtcNow;
@@ -26,9 +34,7 @@ namespace WebApi.Jwt
                         {
                             new Claim(ClaimTypes.Name, username)
                         }),
-
                 Expires = now.AddMinutes(Convert.ToInt32(expireMinutes)),
-                
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(symmetricKey), SecurityAlgorithms.HmacSha256Signature)
             };
 
@@ -48,14 +54,14 @@ namespace WebApi.Jwt
                 if (jwtToken == null)
                     return null;
 
-                var symmetricKey = Convert.FromBase64String(Secret);
+                var symmetricKey = TextEncodings.Base64Url.Decode(Secret);
 
                 var validationParameters = new TokenValidationParameters()
                 {
-                   RequireExpirationTime = true,
-                   ValidateIssuer = false,
-                   ValidateAudience = false,
-                   IssuerSigningKey = new SymmetricSecurityKey(symmetricKey)
+                    RequireExpirationTime = true,
+                    ValidateIssuer = false,
+                    ValidateAudience = false,
+                    IssuerSigningKey = new SymmetricSecurityKey(symmetricKey)
                 };
 
                 SecurityToken securityToken;
@@ -63,7 +69,6 @@ namespace WebApi.Jwt
 
                 return principal;
             }
-
             catch (Exception)
             {
                 return null;

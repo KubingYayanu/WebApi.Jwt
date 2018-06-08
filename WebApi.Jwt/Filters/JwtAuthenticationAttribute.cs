@@ -32,12 +32,9 @@ namespace WebApi.Jwt.Filters
 
             if (principal == null)
                 context.ErrorResult = new AuthenticationFailureResult("Invalid token", request);
-
             else
                 context.Principal = principal;
         }
-
-
 
         private static bool ValidateToken(string token, out string username)
         {
